@@ -1,0 +1,24 @@
+# Какие сводки бесплатны. Платная логика всё равно физически на сервере.
+# only: personal | group — сводка доступна только для такого типа чата.
+sections:
+  tg:
+    - { id: tg.overview,     free: true }
+    - { id: tg.rhythm,       free: false }
+    - { id: tg.clock,        free: false }
+    - { id: tg.dialog,       free: false }
+    - { id: tg.moments,      free: false }
+    - { id: tg.media,        free: false }
+    - { id: tg.words,        free: false }
+    - { id: tg.laugh_swear,  free: false }
+    - { id: tg.names,        free: false }
+    - { id: tg.reactions,    free: false }
+    - { id: tg.group_life,   free: false, only: group }
+  tt:
+    - { id: tt.views_total,  free: true }
+    - { id: tt.chats_counts, free: true }
+    - { id: tt.views_rhythm, free: false }
+    - { id: tt.sessions,     free: false }
+    - { id: tt.activity,     free: false }
+    - { id: tt.chat_deep,    free: false }
+    - { id: tt.emoji,        free: false }
+    - { id: tt.content,      free: false, beta: true }

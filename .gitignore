@@ -1,0 +1,39 @@
+# Реальные экспорты пользователей и автора — НИКОГДА не коммитить
+samples/
+*.private.json
+result.json
+user_data_tiktok*.json
+I_user_data_tiktok_*.json
+*_schema.json
+bad_words.txt
+
+# Секреты
+.env
+.env.*
+!.env.example
+*.pem
+service-account*.json
+
+# Локальные данные API
+apps/api/data/
+*.db
+
+# Сборка и зависимости
+node_modules/
+dist/
+build/
+.vite/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+coverage/
+
+# Прочее
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+reports_out/

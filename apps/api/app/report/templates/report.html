@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru" data-palette="paper">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>{{ title }} — разбор</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>{{ tokens_css | safe }}</style>
+<style>{{ report_css | safe }}</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="cover">
+    <div class="eyebrow">{{ eyebrow }}</div>
+    <h1>{{ title }}</h1>
+    <div class="who">{{ who }}</div>
+    <div class="toolbar">
+      <span>Период отчёта: <b id="global-label"></b></span>
+      <span>
+        <button type="button" data-mode-set="light">Светлая</button>
+        <button type="button" data-mode-set="dark">Тёмная</button>
+        <label>Палитра
+          <select id="palette">
+            {% for p in palettes %}<option value="{{ p.id }}">{{ p.title }}</option>{% endfor %}
+          </select>
+        </label>
+      </span>
+    </div>
+    <div id="global-period"></div>
+  </header>
+  <nav class="toc">
+    {% for s in sections %}<a href="#sec-{{ s.anchor }}">{{ s.title }}</a>{% endfor %}
+  </nav>
+  {% for s in sections %}
+  <section class="sec" id="sec-{{ s.anchor }}"></section>
+  {% endfor %}
+  <section class="howto">
+    <h2>Как считали</h2>
+    <p>Время показано в часовом поясе {{ tz }}. Разговор «начинается» после паузы от {{ cfg.pause_hours }} ч; ответ учитывается, если пришёл не позже чем через {{ cfg.reply_max_hours }} ч. Монолог — сообщения одного человека подряд с перерывами не больше {{ cfg.monologue_gap_min }} мин; разговор — переписка без перерывов дольше {{ cfg.dialog_gap_min }} мин. Сессия TikTok заканчивается, если между просмотрами больше {{ cfg.tt_session_gap_min }} мин. Пересланные сообщения не входят в слова, смех, мат и имена. «Кто кому ставит реакции» — оценка: Telegram сохраняет только последние реакции.</p>
+    <p>Тексты сообщений не передавались на сервер: отчёт построен по обезличенным счётчикам.</p>
+  </section>
+  <footer class="foot"><span>Построено {{ generated }}</span><a href="{{ site_url }}">{{ site_name }}</a></footer>
+</div>
+<script id="report-data" type="application/json">{{ data_json | safe }}</script>
+<script>{{ report_js | safe }}</script>
+</body>
+</html>

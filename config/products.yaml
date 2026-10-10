@@ -1,0 +1,20 @@
+# Продукты и единица оплаты. Меняется без правки кода.
+unit_name:
+  one: "разбор"
+  few: "разбора"
+  many: "разборов"
+  plural_title: "Разборы"
+
+products:
+  - id: pack5
+    title: "5 разборов"
+    runs: 5
+    price_rub: 200
+    price_stars: 150
+    active: true
+
+# Повторный разбор того же чата (тот же отпечаток) бесплатен N дней
+rerun_free_days: 30
+
+# Хранение готовых отчётов
+report_retention_days: 90

@@ -1,0 +1,50 @@
+# Деплой ТОЛЬКО вручную: GitHub → Actions → Deploy → Run workflow.
+# Окружение production защищено обязательным подтверждением автора (Settings → Environments → production).
+# Секреты окружения: VPS_HOST, VPS_USER, VPS_SSH_KEY (или VPS_PASSWORD), PROD_ENV (весь .env целиком).
+# Первый запуск сам ставит Docker и клонирует репозиторий. Подробно — docs/19-deployment.md, docs/AUTHOR-SETUP.md.
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Ветка или тег для выкладки"
+        required: true
+        default: main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Выкатить на VPS
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          PROD_ENV: ${{ secrets.PROD_ENV }}
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          REF: ${{ inputs.ref }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          envs: PROD_ENV,GH_TOKEN,REPO,REF
+          script: |
+            set -e
+            if ! command -v docker >/dev/null; then curl -fsSL https://get.docker.com | sh; fi
+            if [ ! -d /opt/stats_tt_tg/.git ]; then
+              git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" /opt/stats_tt_tg
+            fi
+            cd /opt/stats_tt_tg
+            git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git"
+            git fetch --all --tags
+            git checkout "$REF"
+            git pull --ff-only origin "$REF" || true
+            git remote set-url origin "https://github.com/${REPO}.git"
+            umask 077 && printf '%s\n' "$PROD_ENV" > .env
+            docker compose -f infra/docker-compose.yml --env-file .env up -d --build
+            sleep 15
+            docker compose -f infra/docker-compose.yml exec -T api python -c "import urllib.request;urllib.request.urlopen('http://localhost:8000/healthz')" \
+              || (docker compose -f infra/docker-compose.yml logs --tail=100 api && exit 1)
+            docker image prune -f

@@ -1,61 +1,58 @@
 # 06. HTTP API
 
-Базовый путь `/api/v1`. JSON, ошибки в формате `{"error": {"code": "…", "message": "…", "request_id": "…"}}`. Аутентификация — httpOnly-cookie сессии (`SameSite=Lax`), для мутаций — заголовок `X-CSRF-Token`. Каждый ответ содержит `X-Request-Id`.
+База `/api/v1`. JSON. Ошибки: `{"detail": "<код>"}` (FastAPI) или `{"error": {"code", "request_id"}}` (500). Сессия — httpOnly-cookie `sid`; для изменяющих запросов — заголовок `X-CSRF-Token` = cookie `csrf`. Каждый ответ содержит `X-Request-Id`. Локально документация — `/api/docs`.
 
-## Аутентификация и профиль
-| Метод | Путь | Описание |
-|---|---|---|
-| GET | `/auth/google/login` | редирект на Google (PKCE, state) |
-| GET | `/auth/google/callback` | обмен кода, создание/вход пользователя, cookie |
-| POST | `/auth/logout` | выход |
-| GET | `/me` | профиль, роль, баланс, привязан ли Telegram, настройки (тема, палитра, сохранение истории) |
-| PATCH | `/me/settings` | тема/палитра/часовой пояс/согласия |
-| POST | `/me/telegram-link` | одноразовая ссылка `t.me/<bot>?start=link_<token>` (TTL 10 мин) |
-| DELETE | `/me` | удаление аккаунта и всех данных (кроме того, что обязаны хранить по закону — платежи) |
+✅ — реализовано в v0.1, ⏳ — заглушка/позже.
 
-## Каталог и оплата
-| GET | `/products` | пакеты из `config/products.yaml` |
-| POST | `/payments/yookassa` | `{product_id, promo_code?}` → `{confirmation_url}` |
-| POST | `/webhooks/yookassa` | webhook; проверка IP-диапазонов ЮKassa + перезапрос платежа по API |
-| POST | `/promo/redeem` | `{code}` → `{granted_runs | discount}` |
-| GET | `/me/ledger` | история движений разборов |
+## Вход и профиль
+| | Метод | Путь | Описание |
+|---|---|---|---|
+| ✅ | GET | `/auth/config` | какие способы входа включены |
+| ✅ | GET | `/auth/google/login` → `/auth/google/callback` | Google OAuth (PKCE, state в подписанной cookie) |
+| ✅ | POST | `/auth/telegram` | данные виджета «Войти через Telegram» (проверка HMAC) |
+| ✅ | POST | `/auth/dev-login` | вход по email — только `ENV=local` |
+| ✅ | POST | `/auth/logout` | выход |
+| ✅ | GET | `/me` | профиль, роль, баланс, пояс/город, согласия, привязка Telegram, сводка истории TikTok |
+| ✅ | PATCH | `/me/settings` | `tz`, `city`, `settings`, `consents` |
+| ✅ | POST | `/me/telegram-link` | одноразовая ссылка `t.me/<bot>?start=link_<token>` (10 мин) |
+| ✅ | DELETE | `/me` | удаление аккаунта и данных |
+
+## Оплата и промокоды
+| ✅ | GET | `/products` | пакеты из `config/products.yaml` |
+| ✅ | GET | `/me/ledger` | баланс и история движений |
+| ✅ | POST | `/payments/yookassa` | `{product_id}` → `{confirmation_url}`; без ключей и локально — тестовая оплата |
+| ✅ | POST | `/webhooks/yookassa` | уведомление → перезапрос платежа → начисление (идемпотентно) |
+| ✅ | POST | `/payments/mock/{id}/succeed` | только локально |
+| ✅ | POST | `/promo/redeem` | `{code}` |
 
 ## Разборы
-| POST | `/runs` | `{source, chat_kind, chat_fingerprint, sections[]}` → `{run_id, status: "reserved", free_rerun: bool, ticket, dictionaries}`; 402 если нет баланса |
-| POST | `/runs/{id}/packet` | тело — gzip JSON пакета (`Content-Encoding: gzip`) → 202 |
-| GET | `/runs/{id}` | статус: `reserved → queued → computing → rendering → done | failed` |
-| GET | `/runs/{id}/events` | SSE с прогрессом |
-| GET | `/runs/{id}/report.html` | отчёт (`?theme=light|dark|<palette>`) |
-| POST | `/runs/{id}/export` | `{format: pdf|png_full|png_cards, theme}` → задача → `{export_id}` |
-| GET | `/exports/{id}` | файл или статус |
-| GET | `/runs` | мои разборы |
-| DELETE | `/runs/{id}` | удалить отчёт |
+| ✅ | POST | `/runs` | `{source, chat_kind, chat_key, sections[], custom_names[]}` → `{run_id, charge, balance, dictionaries}`; 402 — нет разборов; 400 — только бесплатные сводки |
+| ✅ | POST | `/runs/{id}/packet` | gzip JSON пакета → 202; расчёт в фоне |
+| ✅ | GET | `/runs`, `/runs/{id}` | список, статус `reserved → queued → computing → rendering → done/failed` |
+| ✅ | GET | `/runs/{id}/report.html` | отчёт (строгий CSP); `?mode=&palette=` — тема |
+| ⏳ | POST | `/runs/{id}/export` | PDF/PNG — фаза 7 (сейчас 501) |
+| ✅ | DELETE | `/runs/{id}` | удалить отчёт |
+| ✅ | GET | `/sample/{tg|tt}` | пример отчёта на синтетике (публично) |
 
 ## TikTok-история
-| POST | `/tiktok/history` | gzip `{files: [{file_hash, owner, views: {ts[], video_id[]}}]}` → `{added, duplicates, total, period}` |
-| GET | `/tiktok/history/summary` | число просмотров, период, число выгрузок, даты |
-| DELETE | `/tiktok/history` | удалить историю |
+| ✅ | POST | `/tiktok/history` | `{files: [{file_hash, ts[], video[]}]}` → `{added, duplicates, total, min_ts, max_ts}`; 409 без согласия |
+| ✅ | GET | `/tiktok/history/summary` | сводка |
+| ✅ | DELETE | `/tiktok/history` | удалить |
 
 ## Прочее
-| GET | `/guides/{tg|tt}` | контент гайда (из `docs/guides`, собирается при сборке) |
-| POST | `/logs/client` | ошибки и события клиента (батч, лимит 50/мин) |
-| GET/PUT | `/me/reminders` | напоминания (дублирует бот) |
-| POST | `/tg/webhook/{secret}` | webhook бота |
-| GET | `/healthz`, `/readyz` | проверки |
+| ✅ | GET | `/catalog` | `config/tiers.yaml` |
+| ✅ | GET | `/guides/{tg|tt}` | markdown гайда |
+| ✅ | POST | `/logs/client` | события браузера (белый список типов, ≤ 50) |
+| ✅ | GET | `/healthz` | проверка |
 
 ## Админка (`role=admin`)
-| GET | `/admin/stats?from&to` | KPI и ряды (docs/15) |
-| GET | `/admin/users?q=` | поиск пользователей |
-| GET | `/admin/users/{id}` | профиль, журнал, разборы, события |
-| POST | `/admin/users/{id}/grant` | `{runs, reason}` |
-| POST | `/admin/users/{id}/refund` | возврат платежа |
-| GET/POST | `/admin/promos` | список / генерация (docs/09) |
-| PATCH | `/admin/promos/{id}` | отключить, продлить |
-| GET | `/admin/runs?status=` | разборы, ошибки |
-| GET | `/admin/events?level&type&user&from&to` | журнал событий |
-| POST | `/admin/dictionaries/sync` | синхронизировать словари с Drive сейчас |
-| GET | `/admin/dictionaries` | версии, ошибки валидации |
-| POST | `/admin/sheets/resync` | перевыгрузить журнал в Google Sheets |
+| ✅ | GET | `/admin/stats?days=` | KPI, популярность сводок |
+| ✅ | GET | `/admin/users?q=` · `/admin/users/{id}` | поиск, карточка |
+| ✅ | POST | `/admin/users/{id}/grant` | `{runs, reason}` |
+| ✅ | GET/POST | `/admin/promos` | список / создание (в т.ч. пачкой) |
+| ✅ | PATCH | `/admin/promos/{id}` | включить/выключить |
+| ✅ | GET | `/admin/runs?status=` · `/admin/events?level&type&user_ref` | разборы, журнал |
+| ⏳ | POST | `/admin/users/{id}/refund` · `/admin/dictionaries/sync` · `/admin/sheets/resync` | фазы 10, 12 |
 
-## Ограничения частоты
-- Аноним: 60 запросов/мин на IP. Пользователь: 120/мин. `/promo/redeem`: 5/мин и 20/сутки на пользователя (перебор кодов). `/runs`: 10/мин.
+## Лимиты частоты (⏳ фаза 4)
+Аноним 60/мин на IP, пользователь 120/мин, `/promo/redeem` 5/мин и 20/сутки, `/runs` 10/мин.

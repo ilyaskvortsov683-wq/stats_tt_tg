@@ -1,45 +1,39 @@
 # 14. Логирование и наблюдаемость
 
-## Два слоя
-1. **Технические логи** — structlog JSON в stdout всех контейнеров (api, worker, bot, web-клиент через `/logs/client`). Docker хранит с ротацией (`max-size 50m, max-file 10`). Позже — Loki/Grafana при необходимости.
-2. **Бизнес-события** — таблица `events` (для админки и выборок) + зеркало ключевых событий в Google Sheets (через `sheets_outbox`).
+## Где хранятся логи
+| Слой | Где | Сколько | Как смотреть |
+|---|---|---|---|
+| Технические логи (structlog JSON: запросы, ошибки, тайминги) | stdout контейнеров → Docker на VPS, ротация 10 × 50 МБ на сервис | ~1–4 недели | ежедневный архив `logs-YYYY-MM-DD.jsonl.gz` в папку проекта на **вашем Google Диске** (фаза 10); при необходимости — Claude смотрит на сервере |
+| Бизнес-события | таблица `events` в PostgreSQL | 180 дней | админка → «Журнал» (фильтры по уровню и типу) |
+| Зеркало событий | Google-таблица `ops_log`, листы `events`, `errors` (+ `orders`, `runs`, `users`) | пока не очистите | в Google Sheets |
+| Действия админа | `admin_audit` | всегда | админка (фаза 10) |
 
-## Поля каждой записи
-`ts, level, service (api|worker|bot|web), event (строковый тип), request_id, run_id?, user_ref?, duration_ms?, status?, error_code?, data{}`.
+Логи на Google Диск можно: в них нет текстов и персональных данных (вычистка ниже), только `user_ref`.
 
-- `request_id` создаётся в Caddy/api и протаскивается в задачи worker и ответы бота — одна цепочка от клика до PDF.
-- `user_ref` — HMAC от user_id; email и tg_id в логах **запрещены**.
+## Поля записи
+`timestamp, level, event, request_id, user_ref?, run_id?, ms?, status?, …данные`. `request_id` создаётся на входе в API (или берётся из заголовка) и возвращается в `X-Request-Id`; пользователь видит его в тексте ошибки — по нему находится вся цепочка.
 
-## Что запрещено логировать (фильтр-процессор structlog + тест)
-Тексты сообщений, содержимое файлов, имена участников чатов, названия чатов, слова, токены сессий, cookie, промокоды целиком (только первые 4 символа), IP в открытом виде (только хэш /24), заголовки `Authorization`, тела webhook платёжки целиком (только id и статус).
-
-Процессор `scrub_pii` удаляет запрещённые ключи и обрезает строки длиннее 200 символов. Юнит-тест прогоняет каждый тип события с «ядовитыми» данными и проверяет, что они не попали в вывод.
+## Что запрещено (процессор `scrub_pii` + тест)
+Тексты сообщений, содержимое файлов, имена участников и названия чатов, слова, токены и cookie, промокоды целиком, IP, тела webhook целиком. Ключи `text, content, messages, email, tg_id, phone, display_name, title, participants, token, cookie, authorization, password, secret, promo_code, code, ip, words, packet, body` → `[scrubbed]`; email и телефоны в строках маскируются; строки обрезаются до 200 символов; списки — до 20 элементов.
 
 ## Уровни
-- `DEBUG` — только локально.
-- `INFO` — бизнес-события и границы шагов.
-- `WARNING` — ожидаемые отказы (невалидный файл, нет баланса, неверный промокод).
-- `ERROR` — исключения; уходят уведомлением админу в Telegram (с дедупликацией по `error_code` раз в 15 мин).
+`INFO` — бизнес-события и запросы; `WARNING` — ожидаемые отказы (неверный файл, нет баланса, неверный промокод); `ERROR` — исключения → лист `errors` и (фаза 10) уведомление админу в Telegram с дедупликацией.
 
-## Каталог событий (минимум)
+## Каталог событий
 | Группа | События |
 |---|---|
-| auth | `auth.login`, `auth.logout`, `auth.failed`, `auth.tg_linked` |
-| visit | `visit.landing`, `visit.app` (utm, source: site/bot/miniapp) |
-| upload | `upload.started`, `upload.parsed` (source, kind, size_bucket, messages_bucket, parse_ms), `upload.failed` (reason), `parser.unknown_shape` (только имена ключей) |
-| analysis | `analysis.free_computed`, `sections.selected` (список id) |
-| runs | `run.reserved`, `run.packet_received` (bytes), `run.computed` (ms), `run.rendered`, `run.done`, `run.failed` (error_code), `run.released`, `run.free_rerun` |
-| export | `export.requested`, `export.done` (format, ms), `export.failed` |
-| billing | `payment.created`, `payment.succeeded`, `payment.canceled`, `payment.refunded`, `stars.paid` |
-| promo | `promo.created`, `promo.redeemed`, `promo.redeem_failed` (reason) |
-| tiktok | `tt.history_merged` (added, duplicates, total), `tt.history_deleted`, `oembed.batch` (ok, unavailable, errors) |
-| bot | `bot.command`, `bot.file_received` (size_bucket), `reminder.created/sent/clicked/disabled` |
-| dictionaries | `dict.sync_started`, `dict.sync_ok` (versions), `dict.sync_invalid` (errors) |
-| admin | `admin.*` (+ admin_audit) |
-| client | `client.error` (message, stack без данных), `client.perf` |
+| вход | `auth.login` (provider), `auth.failed`, `auth.tg_linked`, `account.deleted` |
+| визиты | `visit.landing`, `visit.app` |
+| загрузка | `upload.started` (источник, корзина размера), `upload.parsed` (корзина сообщений, мс), `upload.failed` (причина), `parser.unknown_shape` (только имена ключей) |
+| анализ | `analysis.free_computed`, `sections.selected` (id сводок) |
+| разборы | `run.reserved` (charge), `run.packet_received` (байт), `packet.invalid`, `run.done` (мс), `run.failed` |
+| оплата | `payment.created`, `payment.succeeded`, `payment.canceled`, `payment.create_failed`, `payment.webhook_rejected`, `stars.paid` |
+| промокоды | `promo.created`, `promo.redeemed`, `promo.redeem_failed` (причина) |
+| TikTok | `tt.history_merged` (добавлено, дублей, всего), `tt.history_deleted` |
+| бот | `reminder.created`, `reminder.sent` |
+| админ | `admin.grant` |
+| клиент | `client.error`, `client.perf` |
+| HTTP | `http.request` (метод, путь, статус, мс), `http.unhandled` |
 
-## Метрики здоровья (в админке)
-Ошибки за 24 ч по типам, p50/p95 времени парсинга/разбора/экспорта, длина очереди, неудачные webhook, последняя синхронизация словарей и Sheets, место на диске.
-
-## Хранение
-`events` — 180 дней; технические логи — ротация ~500 МБ на сервис; ошибки клиента — 30 дней.
+## Здоровье (админка → «Обзор»)
+Ошибки за сутки, неудачные разборы; дальше (фаза 10–12): p50/p95 времени, очередь, webhook, синхронизация словарей и таблиц, место на диске, внешний мониторинг `/healthz`.

@@ -1,0 +1,156 @@
+/*
+ * Дизайн-токены stats_tt_tg. Единый источник цветов для веб-приложения и отчёта.
+ * Режим: html[data-mode="light"|"dark"], палитра: html[data-palette="paper|moss|terracotta|dusk|film"].
+ * Палитра «paper» в тёмном режиме = «Графит». Без JS: светлая «Бумага» или тёмный «Графит» по системе.
+ * Перед изменением цветов прогоните проверку контраста (скилл dataviz).
+ */
+
+:root {
+  --font-display: "Unbounded", "Onest", system-ui, sans-serif;
+  --font-text: "Onest", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 16px;
+  --space: 8px;
+  --container: 1120px;
+  --measure: 680px;
+  --dur: 160ms;
+
+  /* Светлая «Бумага» — значения по умолчанию */
+  --bg: #f7f5f0;
+  --surface: #fffdf8;
+  --surface-2: #efebe2;
+  --border: #e0dbcf;
+  --text: #1c1b19;
+  --text-muted: #5f5b53;
+  --text-faint: #8d877b;
+  --accent: #d2462c;
+  --accent-contrast: #ffffff;
+  --positive: #2e7d4f;
+  --negative: #b3261e;
+  --seq-hue: #2f5d8a;
+  --s1: #2f5d8a;
+  --s2: #d2462c;
+  --s3: #c08a1e;
+  --s4: #4e7d3a;
+  --s5: #7a4f9a;
+  --s6: #2a8c8c;
+  --s7: #a23b72;
+  --s8: #6b6b6b;
+  --weekend: var(--accent);
+  --weekday: color-mix(in oklab, var(--text) 35%, var(--surface-2));
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-mode]) {
+    --bg: #121316; --surface: #191a1e; --surface-2: #22242a; --border: #2e3038;
+    --text: #ecebe7; --text-muted: #a9a7a0; --text-faint: #75736d;
+    --accent: #f2a541; --accent-contrast: #121316; --positive: #6cc58e; --negative: #ff7a6b;
+    --seq-hue: #7fb2e5; --s1: #7fb2e5; --s2: #f2a541; --s3: #e58fb0; --s4: #8fcf7a;
+    --s5: #b9a1f0; --s6: #5ed3c2; --s7: #f0d36b; --s8: #9a9a9a;
+    color-scheme: dark;
+  }
+}
+
+/* ---------- Бумага / Графит ---------- */
+html[data-mode="light"][data-palette="paper"], html[data-mode="light"]:not([data-palette]) {
+  --bg: #f7f5f0; --surface: #fffdf8; --surface-2: #efebe2; --border: #e0dbcf;
+  --text: #1c1b19; --text-muted: #5f5b53; --text-faint: #8d877b;
+  --accent: #d2462c; --accent-contrast: #fff; --seq-hue: #2f5d8a;
+  --s1: #2f5d8a; --s2: #d2462c; --s3: #c08a1e; --s4: #4e7d3a; --s5: #7a4f9a; --s6: #2a8c8c; --s7: #a23b72; --s8: #6b6b6b;
+  color-scheme: light;
+}
+html[data-mode="dark"][data-palette="paper"], html[data-mode="dark"]:not([data-palette]) {
+  --bg: #121316; --surface: #191a1e; --surface-2: #22242a; --border: #2e3038;
+  --text: #ecebe7; --text-muted: #a9a7a0; --text-faint: #75736d;
+  --accent: #f2a541; --accent-contrast: #121316; --seq-hue: #7fb2e5;
+  --positive: #6cc58e; --negative: #ff7a6b;
+  --s1: #7fb2e5; --s2: #f2a541; --s3: #e58fb0; --s4: #8fcf7a; --s5: #b9a1f0; --s6: #5ed3c2; --s7: #f0d36b; --s8: #9a9a9a;
+  color-scheme: dark;
+}
+
+/* ---------- Мох ---------- */
+html[data-mode="light"][data-palette="moss"] {
+  --bg: #eef0e8; --surface: #f8f9f4; --surface-2: #e3e7da; --border: #d2d8c6;
+  --text: #1e241c; --text-muted: #525c4c; --text-faint: #7f8977;
+  --accent: #4e7d3a; --accent-contrast: #fff; --seq-hue: #4e7d3a;
+  --s1: #4e7d3a; --s2: #b5651d; --s3: #3b6e74; --s4: #8a6d1f; --s5: #6d4f86; --s6: #a0443c; --s7: #557a9e; --s8: #6b6b6b;
+  color-scheme: light;
+}
+html[data-mode="dark"][data-palette="moss"] {
+  --bg: #141812; --surface: #1b2018; --surface-2: #242b20; --border: #313a2c;
+  --text: #e6ebdf; --text-muted: #a7b09e; --text-faint: #788270;
+  --accent: #9ccc6f; --accent-contrast: #141812; --seq-hue: #9ccc6f;
+  --positive: #9ccc6f; --negative: #ff8a6b;
+  --s1: #9ccc6f; --s2: #e9a35c; --s3: #6fc3c9; --s4: #d9c06a; --s5: #c3a5e6; --s6: #f08f84; --s7: #8fb5dc; --s8: #9a9a9a;
+  color-scheme: dark;
+}
+
+/* ---------- Терракота ---------- */
+html[data-mode="light"][data-palette="terracotta"] {
+  --bg: #f4ece4; --surface: #fbf6f1; --surface-2: #eadfd4; --border: #ddcfc2;
+  --text: #2a1e18; --text-muted: #65544a; --text-faint: #927f73;
+  --accent: #b4532a; --accent-contrast: #fff; --seq-hue: #b4532a;
+  --s1: #b4532a; --s2: #3b6e74; --s3: #8a6d1f; --s4: #5d7d3a; --s5: #7a4f7a; --s6: #2f5d8a; --s7: #a23b52; --s8: #6b6b6b;
+  color-scheme: light;
+}
+html[data-mode="dark"][data-palette="terracotta"] {
+  --bg: #1a1411; --surface: #221a16; --surface-2: #2c221d; --border: #3b2e27;
+  --text: #f0e6de; --text-muted: #b9a89c; --text-faint: #8a786c;
+  --accent: #ec8a5e; --accent-contrast: #1a1411; --seq-hue: #ec8a5e;
+  --positive: #8fcf7a; --negative: #ff7a6b;
+  --s1: #ec8a5e; --s2: #6fc3c9; --s3: #e0c06a; --s4: #9ccc6f; --s5: #d6a5d6; --s6: #8fb5dc; --s7: #f08fa8; --s8: #9a9a9a;
+  color-scheme: dark;
+}
+
+/* ---------- Сумерки ---------- */
+html[data-mode="light"][data-palette="dusk"] {
+  --bg: #f1f0f7; --surface: #fbfaff; --surface-2: #e6e4f2; --border: #d7d4e8;
+  --text: #1d1b2b; --text-muted: #57536e; --text-faint: #858099;
+  --accent: #6a4fd8; --accent-contrast: #fff; --seq-hue: #6a4fd8;
+  --s1: #6a4fd8; --s2: #1f8f80; --s3: #c0571e; --s4: #a23b72; --s5: #2f5d8a; --s6: #8a6d1f; --s7: #4e7d3a; --s8: #6b6b6b;
+  color-scheme: light;
+}
+html[data-mode="dark"][data-palette="dusk"] {
+  --bg: #161827; --surface: #1d2033; --surface-2: #262a40; --border: #343852;
+  --text: #e7e6f2; --text-muted: #a8a6c0; --text-faint: #77758f;
+  --accent: #b49bff; --accent-contrast: #161827; --seq-hue: #b49bff;
+  --positive: #5ed3c2; --negative: #ff7a8a;
+  --s1: #b49bff; --s2: #5ed3c2; --s3: #f2a541; --s4: #f08fc0; --s5: #7fb2e5; --s6: #e0d36b; --s7: #9ccc6f; --s8: #9a9a9a;
+  color-scheme: dark;
+}
+
+/* ---------- Плёнка (высокий контраст) ---------- */
+html[data-mode="light"][data-palette="film"] {
+  --bg: #ffffff; --surface: #ffffff; --surface-2: #f0f0f0; --border: #d6d6d6;
+  --text: #000000; --text-muted: #3d3d3d; --text-faint: #6e6e6e;
+  --accent: #ff3b1f; --accent-contrast: #fff; --seq-hue: #000000;
+  --s1: #000000; --s2: #ff3b1f; --s3: #7a7a7a; --s4: #0050c8; --s5: #b8860b; --s6: #2e7d4f; --s7: #8b008b; --s8: #b5b5b5;
+  color-scheme: light;
+}
+html[data-mode="dark"][data-palette="film"] {
+  --bg: #000000; --surface: #0a0a0a; --surface-2: #161616; --border: #2c2c2c;
+  --text: #ffffff; --text-muted: #c4c4c4; --text-faint: #8f8f8f;
+  --accent: #ff5a3c; --accent-contrast: #000; --seq-hue: #ffffff;
+  --positive: #5fd38a; --negative: #ff5a3c;
+  --s1: #ffffff; --s2: #ff5a3c; --s3: #9a9a9a; --s4: #5aa2ff; --s5: #f2c14e; --s6: #5fd38a; --s7: #e07be0; --s8: #555555;
+  color-scheme: dark;
+}
+
+/* Последовательная шкала для тепловых карт — выводится из --seq-hue */
+:root, html[data-mode] {
+  --seq-0: var(--surface-2);
+  --seq-1: color-mix(in oklab, var(--seq-hue) 12%, var(--surface-2));
+  --seq-2: color-mix(in oklab, var(--seq-hue) 24%, var(--surface-2));
+  --seq-3: color-mix(in oklab, var(--seq-hue) 36%, var(--surface-2));
+  --seq-4: color-mix(in oklab, var(--seq-hue) 48%, var(--surface-2));
+  --seq-5: color-mix(in oklab, var(--seq-hue) 60%, var(--surface-2));
+  --seq-6: color-mix(in oklab, var(--seq-hue) 72%, var(--surface-2));
+  --seq-7: color-mix(in oklab, var(--seq-hue) 86%, var(--surface-2));
+  --seq-8: var(--seq-hue);
+  --weekend: var(--accent);
+  --weekday: color-mix(in oklab, var(--text) 35%, var(--surface-2));
+}

@@ -4,6 +4,8 @@ samples/
 result.json
 user_data_tiktok*.json
 I_user_data_tiktok_*.json
+*_schema.json
+bad_words.txt
 
 # Секреты
 .env
@@ -11,6 +13,10 @@ I_user_data_tiktok_*.json
 !.env.example
 *.pem
 service-account*.json
+
+# Локальные данные API
+apps/api/data/
+*.db
 
 # Сборка и зависимости
 node_modules/
@@ -24,7 +30,7 @@ __pycache__/
 .ruff_cache/
 coverage/
 
-# Локальные артефакты
+# Прочее
 *.log
 .DS_Store
 Thumbs.db

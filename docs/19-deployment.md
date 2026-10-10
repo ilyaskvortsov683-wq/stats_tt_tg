@@ -1,36 +1,30 @@
 # 19. Хостинг и деплой
 
-## Вопрос: Vercel или Netlify?
-
-**Коротко: как основа — нет; рекомендуемое решение — один VPS в РФ.**
-
+## Решение: один VPS в РФ (не Vercel/Netlify)
 | Критерий | Vercel / Netlify | VPS в РФ |
 |---|---|---|
-| 152-ФЗ: ПД (email, платежи, tg_id, TikTok-история) в БД в РФ | ❌ БД всё равно нужна в РФ — получаем два мира | ✅ |
-| Telegram-бот (webhook, локальный bot-api сервер для файлов до 2 ГБ) | ⚠️ webhook можно, локальный bot-api — нельзя | ✅ |
-| PDF/PNG через Chromium (RAM, время) | ⚠️ лимиты функций по размеру/таймауту | ✅ |
-| Фоновые задачи (напоминания, Sheets, словари, oEmbed) | ⚠️ cron ограничен, очереди платные/внешние | ✅ |
-| Доступность из РФ | ⚠️ бывают замедления/блокировки зарубежных CDN | ✅ |
-| Стоимость | бесплатно для статики, дальше растёт | ~600–1500 ₽/мес за 2 vCPU / 4 ГБ |
-| Простота для автора | ✅ | ✅ после настройки — деплой одной кнопкой в GitHub |
+| 152-ФЗ: ПД в БД в РФ | ❌ БД всё равно нужна в РФ | ✅ |
+| Бот с файлами до 2 ГБ (локальный Bot API) | ❌ | ✅ |
+| PDF/PNG через Chromium | ⚠️ лимиты функций | ✅ |
+| Фоновые задачи (Sheets, напоминания, словари) | ⚠️ | ✅ |
+| Доступность из РФ | ⚠️ бывают замедления | ✅ |
+| Цена | бесплатно для статики | ~600–1500 ₽/мес (2 vCPU / 4 ГБ) |
 
-**Где Vercel всё-таки пригодится:** превью фронтенда на каждый PR (по желанию) и крошечный прокси для oEmbed TikTok, если tiktok.com не открывается с российского VPS (docs/17).
+Vercel может пригодиться только как маленький прокси для oEmbed TikTok (через него идут лишь id видео, docs/17).
 
-## Целевая схема
-- **VPS:** Timeweb Cloud / Selectel / Yandex Cloud — 2 vCPU, 4 ГБ RAM, 50 ГБ NVMe, Ubuntu 24.04.
-- **Docker Compose** сервисы: `caddy` (TLS Let's Encrypt, статика web, reverse proxy), `api`, `worker`, `bot`, `telegram-bot-api`, `postgres`, `redis`, `backup` (cron pg_dump → age → S3 в РФ).
-- **Домен** + DNS у российского регистратора.
-- **Мониторинг:** внешний пинг `/healthz` (UptimeRobot или аналог), алерты админу в Telegram.
+## Схема
+Timeweb Cloud (или Selectel / Yandex Cloud), Ubuntu 24.04, Docker Compose (`infra/docker-compose.yml`): `caddy` (HTTPS Let's Encrypt, статика сайта, прокси `/api`), `api`, `worker`, `bot`, `postgres`, `redis`; фаза 9 — `telegram-bot-api`; фаза 12 — бэкап в S3 в РФ.
+
+## Кто что делает
+**Автор** (мышкой, по [AUTHOR-SETUP.md](AUTHOR-SETUP.md)): аккаунт и сервер в Timeweb, домен и A-запись, проект Google Cloud (OAuth + сервисный аккаунт), бот в BotFather, ЮKassa (после запуска сайта), секреты в GitHub Environment `production`.
+**Claude:** всё остальное — Dockerfile'ы, compose, Caddy, workflow, `PROD_ENV` без секретов, проверка после выкладки, разбор логов.
 
 ## CI/CD (GitHub Actions)
-- `ci.yml` — на каждый push/PR: lint, typecheck, тесты TS и Python, паритет парсеров, сборка web, сборка docker-образов.
-- `deploy.yml` — **только ручной запуск** (`workflow_dispatch`) + GitHub Environment `production` с обязательным подтверждением автора: сборка образов → push в GHCR → SSH на VPS → `docker compose pull && docker compose up -d` → миграции Alembic → smoke-тест `/readyz` → уведомление в Telegram. Откат — запуск с предыдущим тегом.
-- Автор нажимает кнопку «Run workflow» в GitHub (или просит Claude запустить) — командная строка не нужна.
+- `ci.yml` — на каждый push: typecheck и тесты TS, сборка сайта; ruff и pytest для API.
+- `deploy.yml` — **только вручную** (Actions → Deploy → Run workflow) и только после подтверждения автора (Environment `production` с Required reviewers). Первый запуск ставит Docker и клонирует репозиторий; каждый запуск записывает `.env` из секрета `PROD_ENV`, пересобирает и перезапускает сервисы, проверяет `/healthz`. Откат — запуск с предыдущим тегом.
 
 ## Окружения
-- `local` — docker compose локально (для Claude).
-- `production` — VPS.
-- `staging` — позже, тот же VPS с другим доменом/БД, если понадобится.
+`local` (SQLite, вход по email, тестовая оплата), `production` (VPS). `staging` — при необходимости на том же VPS.
 
-## Секреты (`.env.example` в фазе 1)
-`DATABASE_URL, REDIS_URL, SESSION_SECRET, USER_REF_SECRET, HISTORY_ENC_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_SA_JSON, DICT_SHEET_ID, OPS_SHEET_ID, YOOKASSA_SHOP_ID, YOOKASSA_SECRET, TG_BOT_TOKEN, TG_WEBHOOK_SECRET, TG_API_ID, TG_API_HASH (для локального bot-api), ADMIN_EMAILS, ADMIN_TG_CHAT_ID, S3_*, OEMBED_PROXY_URL?`
+## Переменные
+Полный список — `.env.example`. Для compose дополнительно: `DOMAIN`, `POSTGRES_PASSWORD`.

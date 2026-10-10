@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Статистика переписок Telegram и истории TikTok: кто пишет первым, экранное время, самые долгие разговоры." />
+    <title>Разбор — статистика переписок и TikTok</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@600&family=JetBrains+Mono:wght@400;600&display=swap" />
+    <script>
+      // Тема до загрузки React — без «вспышки» неправильных цветов.
+      try {
+        var t = JSON.parse(localStorage.getItem('theme') || '{}');
+        var mode = t.mode && t.mode !== 'system' ? t.mode : (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-mode', mode);
+        document.documentElement.setAttribute('data-palette', t.palette || 'paper');
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
